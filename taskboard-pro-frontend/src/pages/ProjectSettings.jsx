@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjects } from '../contexts/ProjectContext';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableStatusItem } from '../components/SortableStatusComponent';
 import api from '../services/api';
 
 export default function ProjectSettings() {
@@ -31,6 +45,18 @@ export default function ProjectSettings() {
   // Delete project state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteText, setDeleteText] = useState('');
+  
+  // Configure DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   
   // Initialize form with project data
   useEffect(() => {
@@ -97,24 +123,25 @@ export default function ProjectSettings() {
   };
   
   // Handle status reordering
-  const handleDragEnd = (result) => {
-    // Dropped outside the list
-    if (!result.destination) {
-      return;
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    if (active.id !== over.id) {
+      setStatuses((items) => {
+        const oldIndex = items.findIndex(item => item.name === active.id);
+        const newIndex = items.findIndex(item => item.name === over.id);
+        
+        const reorderedStatuses = arrayMove(items, oldIndex, newIndex);
+        
+        // Update order values
+        return reorderedStatuses.map((status, index) => ({
+          ...status,
+          order: index + 1
+        }));
+      });
     }
-    
-    // Reorder the statuses
-    const reorderedStatuses = [...statuses];
-    const [removed] = reorderedStatuses.splice(result.source.index, 1);
-    reorderedStatuses.splice(result.destination.index, 0, removed);
-    
-    // Update order values
-    const updatedStatuses = reorderedStatuses.map((status, index) => ({
-      ...status,
-      order: index + 1
-    }));
-    
-    setStatuses(updatedStatuses);
   };
   
   // Handle adding a new status
@@ -335,54 +362,28 @@ export default function ProjectSettings() {
             Customize the statuses that tasks can have in this project. Drag to reorder.
           </p>
           
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="statuses">
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="mb-4 space-y-2"
-                >
-                  {statuses.map((status, index) => (
-                    <Draggable key={status.name} draggableId={status.name} index={index}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className={`flex items-center justify-between p-3 border rounded-md ${
-                            snapshot.isDragging 
-                              ? 'bg-gray-100 dark:bg-dark-700 border-gray-300 dark:border-dark-600' 
-                              : 'bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <span className="w-6 h-6 flex items-center justify-center text-gray-500 dark:text-gray-400 mr-2">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                              </svg>
-                            </span>
-                            <span>{status.name}</span>
-                          </div>
-                          
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteStatus(status.name)}
-                            className="p-1 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="mb-4 space-y-2">
+              <SortableContext 
+                items={statuses.map(status => status.name)}
+                strategy={verticalListSortingStrategy}
+              >
+                {statuses.map((status) => (
+                  <SortableStatusItem 
+                    key={status.name} 
+                    id={status.name}
+                    onDelete={() => handleDeleteStatus(status.name)}
+                  >
+                    {status.name}
+                  </SortableStatusItem>
+                ))}
+              </SortableContext>
+            </div>
+          </DndContext>
           
           <div className="flex mb-4">
             <input
