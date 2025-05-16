@@ -37,12 +37,8 @@ schedulerService.init();
 // Set up middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : 'http://localhost:5173',
-  credentials: true
-}));
+app.use(cors());
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {

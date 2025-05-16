@@ -11,7 +11,8 @@ import {
   sendEmailVerification,
   reauthenticateWithCredential,
   updatePassword,
-  EmailAuthProvider
+  EmailAuthProvider,
+  signInWithRedirect
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import api from '../services/api';
@@ -202,37 +203,34 @@ export function AuthProvider({ children }) {
   };
   
   // Handle sign-in with Google
-  const handleGoogleSignIn = async () => {
-    setAuthError(null);
+  
+// Handle sign-in with Google using redirect instead of popup
+const handleGoogleSignIn = async () => {
+  setAuthError(null);
+  
+  try {
+    const provider = new GoogleAuthProvider();
     
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      return true;
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      
-      // Provide user-friendly error messages
-      switch (error.code) {
-        case 'auth/account-exists-with-different-credential':
-          setAuthError('An account already exists with the same email address but different sign-in credentials.');
-          break;
-        case 'auth/popup-blocked':
-          setAuthError('The popup was blocked by your browser. Please allow popups for this site.');
-          break;
-        case 'auth/popup-closed-by-user':
-          // User closed the popup, no need to display an error
-          break;
-        case 'auth/cancelled-popup-request':
-          // User cancelled the request, no need to display an error
-          break;
-        default:
-          setAuthError('Failed to sign in with Google. Please try again later.');
-      }
-      
-      return false;
-    }
-  };
+    // Add scopes if needed
+    provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+    provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+    
+    // Set custom parameters for the auth provider
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
+    // Sign in with redirect instead of popup
+    await signInWithRedirect(auth, provider);
+    
+    // The result will be handled in a useEffect hook that checks for redirect result
+    return true;
+  } catch (error) {
+    console.error('Error initiating Google sign-in:', error);
+    setAuthError(`Failed to initiate Google sign-in: ${error.message}`);
+    return false;
+  }
+};
   
   // Handle password reset
   const handlePasswordReset = async (email) => {
