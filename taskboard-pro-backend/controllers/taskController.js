@@ -463,3 +463,69 @@ exports.getFilteredTasks = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Add to taskController.js
+exports.updateTaskDependencies = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { dependencies } = req.body;
+    
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    
+    // Validate dependencies to prevent circular dependencies
+    if (dependencies && dependencies.length > 0) {
+      for (const dependency of dependencies) {
+        // Check for self-dependency
+        if (dependency.task === taskId) {
+          return res.status(400).json({ message: 'A task cannot depend on itself' });
+        }
+        
+        // Check for circular dependencies
+        if (dependency.type === 'blocked_by') {
+          const circularCheck = await checkCircularDependency(taskId, dependency.task);
+          if (circularCheck) {
+            return res.status(400).json({ message: 'Circular dependency detected' });
+          }
+        }
+      }
+    }
+    
+    task.dependencies = dependencies || [];
+    await task.save();
+    
+    const populatedTask = await Task.findById(taskId)
+      .populate('dependencies.task', 'title status');
+      
+    res.status(200).json(populatedTask);
+  } catch (error) {
+    console.error('Error updating task dependencies:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Helper function to check for circular dependencies
+const checkCircularDependency = async (sourceTaskId, targetTaskId, visited = new Set()) => {
+  if (sourceTaskId === targetTaskId) return true;
+  if (visited.has(targetTaskId)) return false;
+  
+  visited.add(targetTaskId);
+  
+  const targetTask = await Task.findById(targetTaskId);
+  if (!targetTask) return false;
+  
+  for (const dependency of targetTask.dependencies) {
+    if (dependency.type === 'blocked_by') {
+      const isCircular = await checkCircularDependency(
+        sourceTaskId, 
+        dependency.task.toString(),
+        visited
+      );
+      if (isCircular) return true;
+    }
+  }
+  
+  return false;
+};

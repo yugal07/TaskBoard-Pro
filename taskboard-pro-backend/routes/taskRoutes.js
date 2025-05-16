@@ -53,6 +53,13 @@ router.put(
   taskController.updateTask
 );
 
+
+router.put(
+  '/:taskId/dependencies',
+  verifyToken,
+  taskController.updateTaskDependencies
+);
+
 // @route   DELETE /api/tasks/:taskId
 // @desc    Delete a task
 // @access  Private (project members only)
