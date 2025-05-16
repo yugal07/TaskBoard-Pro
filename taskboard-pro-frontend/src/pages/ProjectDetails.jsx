@@ -19,8 +19,9 @@ export default function ProjectDetails() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
+  const [projectFetched, setProjectFetched] = useState(false); // Add this to track if we've fetched the project
   
-  // Fetch project details when component mounts
+  // Fetch project details when component mounts or projectId changes
   useEffect(() => {
     const fetchProjectDetails = async () => {
       try {
@@ -39,6 +40,7 @@ export default function ProjectDetails() {
         const response = await api.get(`/projects/${projectId}`);
         setCurrentProject(response.data);
         setLoading(false);
+        setProjectFetched(true); // Mark that we've fetched the project
       } catch (error) {
         console.error('Error fetching project details:', error);
         setError('Failed to load project details. Please try again later.');
@@ -46,13 +48,20 @@ export default function ProjectDetails() {
       }
     };
     
-    fetchProjectDetails();
+    // Only fetch if we haven't already fetched or if the projectId changes
+    if (!projectFetched || currentProject?._id !== projectId) {
+      fetchProjectDetails();
+    }
     
     // Clean up current project when unmounting
     return () => {
-      setCurrentProject(null);
+      // Only clear the current project when navigating away from this component
+      if (location.pathname.indexOf(projectId) === -1) {
+        setCurrentProject(null);
+        setProjectFetched(false);
+      }
     };
-  }, [projectId, projects, setCurrentProject, currentProject]);
+  }, [projectId, projects, setCurrentProject]); // Remove currentProject from dependencies
   
   // Handle inviting a user to the project
   const handleInvite = async (e) => {

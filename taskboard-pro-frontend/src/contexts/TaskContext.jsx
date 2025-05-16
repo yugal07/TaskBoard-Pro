@@ -15,6 +15,7 @@ export function TaskProvider({ children }) {
     status: '',
     dueDate: '',
   });
+  const [fetchedProjects, setFetchedProjects] = useState({}); // Track which projects we've fetched tasks for
   const { currentProject } = useProjects();
   
   // Fetch tasks for the current project
@@ -26,31 +27,42 @@ export function TaskProvider({ children }) {
       return;
     }
     
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get(`/tasks/project/${currentProject._id}`);
-        setTasks(response.data);
-        setFilteredTasks(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        setLoading(false);
-      }
-    };
+    const projectId = currentProject._id;
     
-    fetchTasks();
+    // Only fetch if we haven't already fetched for this project
+    if (!fetchedProjects[projectId]) {
+      const fetchTasks = async () => {
+        try {
+          setLoading(true);
+          const response = await api.get(`/tasks/project/${projectId}`);
+          setTasks(response.data);
+          setFilteredTasks(response.data);
+          setLoading(false);
+          
+          // Mark this project as having been fetched
+          setFetchedProjects(prev => ({
+            ...prev,
+            [projectId]: true
+          }));
+        } catch (error) {
+          console.error('Error fetching tasks:', error);
+          setLoading(false);
+        }
+      };
+      
+      fetchTasks();
+    }
     
     // Join the project's socket room
-    socketService.joinProject(currentProject._id);
+    socketService.joinProject(projectId);
     
     return () => {
       // Leave the project's socket room when component unmounts or project changes
-      if (currentProject) {
-        socketService.leaveProject(currentProject._id);
+      if (projectId) {
+        socketService.leaveProject(projectId);
       }
     };
-  }, [currentProject]);
+  }, [currentProject, fetchedProjects]);
   
   // Apply filters to tasks
   useEffect(() => {
@@ -222,6 +234,47 @@ export function TaskProvider({ children }) {
     }
   };
   
+  // Add file attachment to task
+  const uploadAttachment = async (taskId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await api.post(`/files/upload/${taskId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+      throw error;
+    }
+  };
+  
+  // Delete file attachment from task
+  const deleteAttachment = async (taskId, attachmentId) => {
+    try {
+      await api.delete(`/files/${taskId}/${attachmentId}`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      throw error;
+    }
+  };
+  
+  // Add time tracking entry to task
+  const addTimeEntry = async (taskId, timeData) => {
+    try {
+      const response = await api.post(`/tasks/${taskId}/time`, timeData);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding time entry:', error);
+      throw error;
+    }
+  };
+  
   const value = {
     tasks: filteredTasks, // Use filtered tasks for rendering
     allTasks: tasks, // Keep original tasks for reference
@@ -231,7 +284,10 @@ export function TaskProvider({ children }) {
     deleteTask,
     moveTask,
     applyFilters,
-    filters
+    filters,
+    uploadAttachment,
+    deleteAttachment,
+    addTimeEntry
   };
   
   return (
