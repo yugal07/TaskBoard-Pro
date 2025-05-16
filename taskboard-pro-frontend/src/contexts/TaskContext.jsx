@@ -2,18 +2,26 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 import socketService from '../services/socketService';
 import { useProjects } from './ProjectContext';
+import { isAfter, isBefore, isToday, startOfDay, addDays, endOfWeek, startOfWeek } from 'date-fns';
 
 const TaskContext = createContext();
 
 export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    assignee: '',
+    status: '',
+    dueDate: '',
+  });
   const { currentProject } = useProjects();
   
   // Fetch tasks for the current project
   useEffect(() => {
     if (!currentProject) {
       setTasks([]);
+      setFilteredTasks([]);
       setLoading(false);
       return;
     }
@@ -23,6 +31,7 @@ export function TaskProvider({ children }) {
         setLoading(true);
         const response = await api.get(`/tasks/project/${currentProject._id}`);
         setTasks(response.data);
+        setFilteredTasks(response.data);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching tasks:', error);
@@ -42,6 +51,78 @@ export function TaskProvider({ children }) {
       }
     };
   }, [currentProject]);
+  
+  // Apply filters to tasks
+  useEffect(() => {
+    if (!tasks.length) {
+      setFilteredTasks([]);
+      return;
+    }
+    
+    let filtered = [...tasks];
+    
+    // Filter by assignee
+    if (filters.assignee) {
+      if (filters.assignee === 'unassigned') {
+        filtered = filtered.filter(task => !task.assignee);
+      } else {
+        filtered = filtered.filter(task => 
+          task.assignee && task.assignee._id === filters.assignee
+        );
+      }
+    }
+    
+    // Filter by status
+    if (filters.status) {
+      filtered = filtered.filter(task => task.status === filters.status);
+    }
+    
+    // Filter by due date
+    if (filters.dueDate) {
+      const today = startOfDay(new Date());
+      const thisWeekEnd = endOfWeek(today);
+      const thisWeekStart = startOfWeek(today);
+      const nextWeekStart = addDays(thisWeekEnd, 1);
+      const nextWeekEnd = endOfWeek(nextWeekStart);
+      
+      switch (filters.dueDate) {
+        case 'overdue':
+          filtered = filtered.filter(task => 
+            task.dueDate && isBefore(new Date(task.dueDate), today)
+          );
+          break;
+        case 'today':
+          filtered = filtered.filter(task => 
+            task.dueDate && isToday(new Date(task.dueDate))
+          );
+          break;
+        case 'this-week':
+          filtered = filtered.filter(task => {
+            if (!task.dueDate) return false;
+            const dueDate = new Date(task.dueDate);
+            return !isBefore(dueDate, today) && !isAfter(dueDate, thisWeekEnd);
+          });
+          break;
+        case 'next-week':
+          filtered = filtered.filter(task => {
+            if (!task.dueDate) return false;
+            const dueDate = new Date(task.dueDate);
+            return !isBefore(dueDate, nextWeekStart) && !isAfter(dueDate, nextWeekEnd);
+          });
+          break;
+        case 'later':
+          filtered = filtered.filter(task => 
+            task.dueDate && isAfter(new Date(task.dueDate), nextWeekEnd)
+          );
+          break;
+        case 'no-date':
+          filtered = filtered.filter(task => !task.dueDate);
+          break;
+      }
+    }
+    
+    setFilteredTasks(filtered);
+  }, [tasks, filters]);
   
   // Set up real-time task updates
   useEffect(() => {
@@ -80,6 +161,11 @@ export function TaskProvider({ children }) {
       socketService.unsubscribeFromTaskDeleted();
     };
   }, [currentProject]);
+  
+  // Apply task filters
+  const applyFilters = (newFilters) => {
+    setFilters(newFilters);
+  };
   
   // Create a new task
   const createTask = async (taskData) => {
@@ -137,12 +223,15 @@ export function TaskProvider({ children }) {
   };
   
   const value = {
-    tasks,
+    tasks: filteredTasks, // Use filtered tasks for rendering
+    allTasks: tasks, // Keep original tasks for reference
     loading,
     createTask,
     updateTask,
     deleteTask,
-    moveTask
+    moveTask,
+    applyFilters,
+    filters
   };
   
   return (
