@@ -12,6 +12,7 @@ import {
   reauthenticateWithCredential,
   updatePassword,
   EmailAuthProvider,
+  getRedirectResult,
   signInWithRedirect
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
@@ -28,6 +29,28 @@ export function AuthProvider({ children }) {
   const [rememberMe, setRememberMe] = useState(
     localStorage.getItem('rememberMe') === 'true'
   );
+
+  // Check for redirect result when the component mounts
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        // Get the result of the redirect sign-in
+        const result = await getRedirectResult(auth);
+        
+        // If there's no result, the user hasn't been redirected from a sign-in page
+        if (!result) return;
+        
+        // User is signed in, you can get the user from result.user
+        // The token will be handled by the onAuthStateChanged listener
+        console.log("Successfully signed in with Google redirect");
+      } catch (error) {
+        console.error('Error processing redirect result:', error);
+        setAuthError(`Failed to complete Google sign-in: ${error.message}`);
+      }
+    };
+    
+    handleRedirectResult();
+  }, []);
 
   // Set up session timer
   useEffect(() => {
@@ -202,35 +225,33 @@ export function AuthProvider({ children }) {
     }
   };
   
-  // Handle sign-in with Google
-  
-// Handle sign-in with Google using redirect instead of popup
-const handleGoogleSignIn = async () => {
-  setAuthError(null);
-  
-  try {
-    const provider = new GoogleAuthProvider();
+  // Handle sign-in with Google using popup instead of redirect
+  const handleGoogleSignIn = async () => {
+    setAuthError(null);
     
-    // Add scopes if needed
-    provider.addScope('https://www.googleapis.com/auth/userinfo.email');
-    provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
-    
-    // Set custom parameters for the auth provider
-    provider.setCustomParameters({
-      prompt: 'select_account'
-    });
-    
-    // Sign in with redirect instead of popup
-    await signInWithRedirect(auth, provider);
-    
-    // The result will be handled in a useEffect hook that checks for redirect result
-    return true;
-  } catch (error) {
-    console.error('Error initiating Google sign-in:', error);
-    setAuthError(`Failed to initiate Google sign-in: ${error.message}`);
-    return false;
-  }
-};
+    try {
+      const provider = new GoogleAuthProvider();
+      
+      // Add scopes if needed
+      provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+      provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+      
+      // Set custom parameters for the auth provider
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      // Sign in with popup instead of redirect
+      const result = await signInWithRedirect(auth, provider);
+      
+      // The result will be handled in the onAuthStateChanged listener
+      return true;
+    } catch (error) {
+      console.error('Error with Google sign-in:', error);
+      setAuthError(`Failed to sign in with Google: ${error.message}`);
+      return false;
+    }
+  };
   
   // Handle password reset
   const handlePasswordReset = async (email) => {
