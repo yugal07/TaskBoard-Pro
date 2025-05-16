@@ -78,49 +78,68 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Get ID token for backend authentication
-        const token = await user.getIdToken();
+  // Get ID token for backend authentication
+  const token = await user.getIdToken();
+  
+  // Store token in localStorage
+  localStorage.setItem('authToken', token);
+  
+  // Set auth header for API requests
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  
+  // Initialize socket connection
+  socketService.init();
+  
+  // If remember me is not enabled, set session expiry (4 hours)
+  if (!rememberMe) {
+    const expiryTime = new Date();
+    expiryTime.setHours(expiryTime.getHours() + 4);
+    setSessionExpiry(expiryTime.toISOString());
+    localStorage.setItem('sessionExpiry', expiryTime.toISOString());
+  } else {
+    setSessionExpiry(null);
+    localStorage.removeItem('sessionExpiry');
+  }
+  
+  // Get or create user in our database
+  try {
+    // Try the /me endpoint first to get the existing user profile
+    try {
+      const response = await api.get('/auth/me');
+      
+      setCurrentUser({
+        ...response.data,
+        uid: user.uid,
+        emailVerified: user.emailVerified
+      });
+    } catch (error) {
+      // If /me fails (likely user doesn't exist yet), use /register to create the user
+      if (error.response && error.response.status === 404) {
+        console.log("User not found in database, registering new user...");
         
-        // Store token in localStorage
-        localStorage.setItem('authToken', token);
+        const registerResponse = await api.post('/auth/register', {
+          uid: user.uid,
+          displayName: user.displayName || user.email.split('@')[0],
+          email: user.email,
+          photoURL: user.photoURL,
+          emailVerified: user.emailVerified
+        });
         
-        // Set auth header for API requests
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        // Initialize socket connection
-        socketService.init();
-        
-        // If remember me is not enabled, set session expiry (4 hours)
-        if (!rememberMe) {
-          const expiryTime = new Date();
-          expiryTime.setHours(expiryTime.getHours() + 4);
-          setSessionExpiry(expiryTime.toISOString());
-          localStorage.setItem('sessionExpiry', expiryTime.toISOString());
-        } else {
-          setSessionExpiry(null);
-          localStorage.removeItem('sessionExpiry');
-        }
-        
-        // Get or create user in our database
-        try {
-          const response = await api.post('/auth/user-profile', {
-            uid: user.uid,
-            displayName: user.displayName || user.email.split('@')[0],
-            email: user.email,
-            photoURL: user.photoURL,
-            emailVerified: user.emailVerified
-          });
-          
-          setCurrentUser({
-            ...response.data,
-            uid: user.uid,
-            emailVerified: user.emailVerified
-          });
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-          setAuthError('Failed to fetch user profile. Please try again later.');
-        }
+        setCurrentUser({
+          ...registerResponse.data,
+          uid: user.uid,
+          emailVerified: user.emailVerified
+        });
       } else {
+        // Some other error
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    setAuthError('Failed to fetch user profile. Please try again later.');
+  }
+} else {
         setCurrentUser(null);
         localStorage.removeItem('authToken');
         localStorage.removeItem('sessionExpiry');
@@ -227,31 +246,69 @@ export function AuthProvider({ children }) {
   
   // Handle sign-in with Google using popup instead of redirect
   const handleGoogleSignIn = async () => {
-    setAuthError(null);
+  setAuthError(null);
+  
+  try {
+    const provider = new GoogleAuthProvider();
+    
+    // Add scopes if needed
+    provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+    provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+    
+    // Set custom parameters for the auth provider
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
+    // Use signInWithPopup instead of signInWithRedirect
+    const result = await signInWithPopup(auth, provider);
+    
+    // Handle the result immediately
+    console.log("Google sign-in successful:", result.user.email);
+    
+    // Get the token for your backend
+    const token = await result.user.getIdToken();
+    localStorage.setItem('authToken', token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    // Debug log
+    console.log('API call to /auth/register with token:', token ? 'Yes (valid token)' : 'No token');
     
     try {
-      const provider = new GoogleAuthProvider();
-      
-      // Add scopes if needed
-      provider.addScope('https://www.googleapis.com/auth/userinfo.email');
-      provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
-      
-      // Set custom parameters for the auth provider
-      provider.setCustomParameters({
-        prompt: 'select_account'
+      // Use the new registration endpoint instead of user-profile
+      const response = await api.post('/auth/register', {
+        uid: result.user.uid,
+        displayName: result.user.displayName || result.user.email.split('@')[0],
+        email: result.user.email,
+        photoURL: result.user.photoURL,
+        emailVerified: result.user.emailVerified
       });
       
-      // Sign in with popup instead of redirect
-      const result = await signInWithRedirect(auth, provider);
+      // Debug log for response
+      console.log('User profile response:', response.data);
       
-      // The result will be handled in the onAuthStateChanged listener
+      // IMPORTANT: Set the current user directly here
+      setCurrentUser({
+        ...response.data,
+        uid: result.user.uid,
+        emailVerified: result.user.emailVerified
+      });
+      
+      // Initialize socket connection
+      socketService.init();
+      
       return true;
     } catch (error) {
-      console.error('Error with Google sign-in:', error);
-      setAuthError(`Failed to sign in with Google: ${error.message}`);
+      console.error('Error creating/updating user profile after Google sign-in:', error);
+      setAuthError('Failed to complete Google sign-in. Please try again.');
       return false;
     }
-  };
+  } catch (error) {
+    console.error('Error with Google sign-in:', error);
+    setAuthError(`Failed to sign in with Google: ${error.message}`);
+    return false;
+  }
+};
   
   // Handle password reset
   const handlePasswordReset = async (email) => {

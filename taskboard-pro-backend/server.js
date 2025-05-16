@@ -70,6 +70,29 @@ app.use((err, req, res, next) => {
   res.status(status).json({ message });
 });
 
+app.get('/debug-routes', (req, res) => {
+  let routes = [];
+  
+  app._router.stack.forEach(middleware => {
+    if(middleware.route) { // routes registered directly on the app
+      routes.push(middleware.route.path);
+    } else if(middleware.name === 'router') { // router middleware
+      middleware.handle.stack.forEach(handler => {
+        if(handler.route) {
+          const path = handler.route.path;
+          const baseRoute = middleware.regexp.toString()
+            .replace('\\^','')
+            .replace('\\/?(?=\\/|$)','')
+            .replace(/\\\//g, '/');
+          routes.push(baseRoute + path);
+        }
+      });
+    }
+  });
+  
+  res.json(routes);
+});
+
 // Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => { // Use server instead of app

@@ -131,27 +131,28 @@ export default function Login() {
   };
   
   const handleSocialAuth = async (provider) => {
-    clearAuthError();
-    setSuccessMessage('');
-    setLoading(true);
+  clearAuthError();
+  setSuccessMessage('');
+  setLoading(true);
+  
+  try {
+    let success;
     
-    try {
-      let success;
-      
-      if (provider === 'google') {
-        success = await handleGoogleSignIn();
-      } 
-      // Add other providers as needed (Facebook, GitHub, etc.)
-      
-      if (success) {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error(`Error with ${provider} authentication:`, error);
-    } finally {
-      setLoading(false);
+    if (provider === 'google') {
+      success = await handleGoogleSignIn();
+    } 
+    // Add other providers as needed (Facebook, GitHub, etc.)
+    
+    if (success) {
+      console.log("Social auth successful, navigating to dashboard...");
+      navigate('/');
     }
-  };
+  } catch (error) {
+    console.error(`Error with ${provider} authentication:`, error);
+  } finally {
+    setLoading(false);
+  }
+};
   
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
