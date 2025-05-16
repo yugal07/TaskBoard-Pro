@@ -109,6 +109,8 @@ exports.createTask = async (req, res) => {
     if (assignee) {
       await automationService.processTaskAssignment(task);
     }
+
+    await automationService.processTaskCreation(task)
     
     res.status(201).json(populatedTask);
   } catch (error) {

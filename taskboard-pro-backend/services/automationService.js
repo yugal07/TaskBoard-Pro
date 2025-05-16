@@ -163,3 +163,45 @@ const executeAutomationAction = async (automation, task) => {
     console.error('Error executing automation action:', error);
   }
 };
+
+// Process automations when a task is created
+exports.processTaskCreation = async (task) => {
+  try {
+    // Find all active automations with task creation trigger
+    const automations = await Automation.find({
+      project: task.project,
+      'trigger.type': 'task_creation',
+      active: true
+    });
+    
+    for (const automation of automations) {
+      // Check if conditions match (e.g., specific assignee, specific tags)
+      const condition = automation.trigger.condition;
+      
+      let conditionMet = true;
+      
+      // Check assignee condition if specified
+      if (condition.assigneeId && 
+          (!task.assignee || task.assignee.toString() !== condition.assigneeId)) {
+        conditionMet = false;
+      }
+      
+      // Check tags condition if specified
+      if (condition.tags && condition.tags.length > 0) {
+        const hasAllTags = condition.tags.every(tag => 
+          task.tags && task.tags.includes(tag)
+        );
+        if (!hasAllTags) {
+          conditionMet = false;
+        }
+      }
+      
+      // Execute automation if conditions are met
+      if (conditionMet) {
+        await executeAutomationAction(automation, task);
+      }
+    }
+  } catch (error) {
+    console.error('Error processing task creation automations:', error);
+  }
+};
