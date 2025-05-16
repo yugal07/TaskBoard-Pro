@@ -14,6 +14,15 @@ router.get(
   taskController.getProjectTasks
 );
 
+// @route   GET /api/tasks/filter
+// @desc    Get filtered tasks
+// @access  Private (project members only)
+router.get(
+  '/filter',
+  verifyToken,
+  taskController.getFilteredTasks
+);
+
 // @route   POST /api/tasks
 // @desc    Create a new task
 // @access  Private (project members only)
@@ -51,6 +60,20 @@ router.delete(
   '/:taskId',
   verifyToken,
   taskController.deleteTask
+);
+
+// @route   POST /api/tasks/:taskId/time
+// @desc    Add a time tracking entry to a task
+// @access  Private (project members only)
+router.post(
+  '/:taskId/time',
+  [
+    verifyToken,
+    [
+      check('duration', 'Duration is required and must be a number').isNumeric()
+    ]
+  ],
+  taskController.addTimeTrackingEntry
 );
 
 module.exports = router;

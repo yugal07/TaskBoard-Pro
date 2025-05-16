@@ -25,19 +25,6 @@ const taskSchema = new mongoose.Schema({
   dueDate: {
     type: Date
   },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
   priority: {
     type: String,
     enum: ['Low', 'Medium', 'High', 'Urgent'],
@@ -48,7 +35,11 @@ const taskSchema = new mongoose.Schema({
     name: String,
     url: String,
     type: String,
-    uploadedAt: Date,
+    size: Number,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    },
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
@@ -61,27 +52,53 @@ const taskSchema = new mongoose.Schema({
     },
     type: {
       type: String,
-      enum: ['blocks', 'blocked_by']
+      enum: ['blocks', 'blocked_by'],
+      required: true
     }
   }],
   timeTracking: {
-    estimate: Number, // minutes
-    logged: Number, // minutes
+    estimate: Number, // estimated minutes
+    logged: {
+      type: Number,
+      default: 0
+    }, // total logged minutes
     history: [{
       startTime: Date,
       endTime: Date,
       duration: Number, // minutes
+      description: String,
       user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
       }
     }]
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
 // Update the updatedAt field before saving
 taskSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
+  
+  // If time tracking history was updated, recalculate total logged time
+  if (this.isModified('timeTracking.history')) {
+    this.timeTracking.logged = this.timeTracking.history.reduce(
+      (total, entry) => total + (entry.duration || 0), 0
+    );
+  }
+  
   next();
 });
 
