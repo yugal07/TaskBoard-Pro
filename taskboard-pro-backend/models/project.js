@@ -53,6 +53,26 @@ projectSchema.pre('save', function(next) {
       { name: 'Done', order: 3 }
     ];
   }
+  
+  // Make sure owner is always an Admin in the members array
+  if (this.isNew) {
+    const ownerIndex = this.members.findIndex(member => 
+      member.user && member.user.toString() === this.owner.toString()
+    );
+    
+    if (ownerIndex === -1) {
+      // Owner not in members, add them
+      this.members.push({
+        user: this.owner,
+        role: 'Admin',
+        joinedAt: new Date()
+      });
+    } else {
+      // Ensure owner has Admin role
+      this.members[ownerIndex].role = 'Admin';
+    }
+  }
+  
   next();
 });
 

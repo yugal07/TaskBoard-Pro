@@ -35,6 +35,35 @@ exports.createUserProfile = async (req, res) => {
   }
 };
 
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Check if user exists in our database
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      // For security reasons, don't reveal if email exists or not
+      return res.status(200).json({ message: 'If your email is registered, you will receive a password reset link' });
+    }
+    
+    // Use Firebase Admin to generate password reset link
+    const resetLink = await admin.auth().generatePasswordResetLink(email, {
+      url: process.env.FRONTEND_URL + '/reset-password',
+      handleCodeInApp: true
+    });
+    
+    // You can implement your own email sending logic here
+    // For example, using nodemailer or a service like SendGrid
+    // await sendEmail(email, 'Password Reset', `Click this link to reset your password: ${resetLink}`);
+    
+    res.status(200).json({ message: 'If your email is registered, you will receive a password reset link' });
+  } catch (error) {
+    console.error('Error generating password reset link:', error);
+    res.status(500).json({ message: 'Failed to process password reset request' });
+  }
+};
+
 // Get current user's profile
 exports.getCurrentUser = async (req, res) => {
   try {

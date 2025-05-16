@@ -10,6 +10,7 @@ import { useAuth } from './contexts/AuthContext';
 // Import page components
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import ProjectDetails from './pages/ProjectDetails';
 import ProjectAutomations from './pages/ProjectAutomations';
 import ProjectAnalytics from './pages/ProjectAnalytics';
@@ -44,6 +45,7 @@ function App() {
                 <AutomationProvider>
                   <Routes>
                     <Route path="/login" element={<Login />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/" element={
                       <ProtectedRoute>
                         <Layout>
@@ -65,7 +67,6 @@ function App() {
                         </Layout>
                       </ProtectedRoute>
                     } />
-                    {/* New Analytics Routes */}
                     <Route path="/projects/:projectId/analytics" element={
                       <ProtectedRoute>
                         <Layout>
