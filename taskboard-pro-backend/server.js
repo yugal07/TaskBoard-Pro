@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http'); 
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -16,9 +17,15 @@ const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const automationRoutes = require('./routes/automationRoutes');
+const notificationRoutes = require("./routes/notificationRoutes")
 
 // Initialize Express app
 const app = express();
+const server = http.createServer(app); // Create HTTP server
+
+// Initialize Socket.io
+const socketService = require('./services/socketService');
+socketService.init(server);
 
 // Connect to MongoDB
 connectDB();
@@ -45,6 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/automations', automationRoutes);
+app.use('/api/notifications' , notificationRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -56,6 +64,6 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => { // Use server instead of app
   console.log(`Server running on port ${PORT}`);
 });

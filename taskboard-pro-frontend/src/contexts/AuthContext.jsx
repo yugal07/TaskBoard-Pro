@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import api from '../services/api';
+import socketService from '../services/socketService'; // Add this
 
 const AuthContext = createContext();
 
@@ -20,6 +21,9 @@ export function AuthProvider({ children }) {
         
         // Set auth header for API requests
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Initialize socket connection
+        socketService.init();
         
         // Get or create user in our database
         try {
@@ -41,11 +45,17 @@ export function AuthProvider({ children }) {
         setCurrentUser(null);
         localStorage.removeItem('authToken');
         delete api.defaults.headers.common['Authorization'];
+        
+        // Disconnect socket
+        socketService.disconnect();
       }
       setLoading(false);
     });
     
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      socketService.disconnect();
+    };
   }, []);
   
   const value = {

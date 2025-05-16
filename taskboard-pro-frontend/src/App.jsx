@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
+import { TaskProvider } from './contexts/TaskContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { useAuth } from './contexts/AuthContext';
 
 // Import page components
@@ -32,24 +34,28 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <ProjectProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/projects/:projectId" element={
-                <ProtectedRoute>
-                  <Layout>
-                    <ProjectDetails />
-                  </Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <TaskProvider>
+              <NotificationProvider>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/projects/:projectId" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ProjectDetails />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </NotificationProvider>
+            </TaskProvider>
           </ProjectProvider>
         </AuthProvider>
       </ThemeProvider>

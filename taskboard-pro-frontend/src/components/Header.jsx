@@ -1,6 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useProjects } from '../contexts/ProjectContext';
+import NotificationDropdown from './NotificationDropdown';
 
 export default function Header() {
   const { currentUser } = useAuth();
@@ -17,6 +18,8 @@ export default function Header() {
             </h1>
           </div>
           <div className="flex items-center space-x-4">
+            <NotificationDropdown /> 
+            
             <button
               onClick={toggleDarkMode}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-700"

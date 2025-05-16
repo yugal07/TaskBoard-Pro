@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const Project = require('../models/project');
 const User = require('../models/user');
+const notificationService = require("../services/notificationServices");
 
 // Get all projects for current user
 exports.getUserProjects = async (req, res) => {
@@ -140,6 +141,7 @@ exports.inviteUserToProject = async (req, res) => {
     // Add user to project members
     project.members.push(invitedUser._id);
     await project.save();
+    await notificationService.createProjectInvitationNotification(project , invitedUser._id)
     
     // Add project to user's projects
     invitedUser.projects.push(project._id);
