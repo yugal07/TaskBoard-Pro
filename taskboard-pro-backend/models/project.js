@@ -14,8 +14,19 @@ const projectSchema = new mongoose.Schema({
     required: true
   },
   members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    role: {
+      type: String,
+      enum: ['Admin', 'Editor', 'Viewer'],
+      default: 'Editor'
+    },
+    joinedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
   statuses: [{
     name: {

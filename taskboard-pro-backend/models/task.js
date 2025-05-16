@@ -37,6 +37,45 @@ const taskSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  priority: {
+    type: String,
+    enum: ['Low', 'Medium', 'High', 'Urgent'],
+    default: 'Medium'
+  },
+  tags: [String],
+  attachments: [{
+    name: String,
+    url: String,
+    type: String,
+    uploadedAt: Date,
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  }],
+  dependencies: [{
+    task: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Task'
+    },
+    type: {
+      type: String,
+      enum: ['blocks', 'blocked_by']
+    }
+  }],
+  timeTracking: {
+    estimate: Number, // minutes
+    logged: Number, // minutes
+    history: [{
+      startTime: Date,
+      endTime: Date,
+      duration: Number, // minutes
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    }]
   }
 });
 

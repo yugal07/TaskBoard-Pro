@@ -48,7 +48,53 @@ const automationSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  trigger: {
+    type: {
+      type: String,
+      enum: [
+        'task_status_change', 
+        'task_assignment', 
+        'due_date_passed',
+        'task_creation',
+        'comment_added',
+        'priority_change'
+      ],
+      required: true
+    },
+    condition: {
+      type: Object,
+      required: true
+    },
+    // Add conditional logic
+    conditional: {
+      operator: {
+        type: String,
+        enum: ['and', 'or', 'not']
+      },
+      conditions: [Object]
+    }
+  },
+  actions: [{
+    type: {
+      type: String,
+      enum: [
+        'change_status', 
+        'assign_badge', 
+        'send_notification',
+        'reassign_task',
+        'add_comment',
+        'change_priority',
+        'apply_label',
+        'remove_label'
+      ],
+      required: true
+    },
+    params: {
+      type: Object,
+      required: true
+    }
+  }]
 });
 
 // Update the updatedAt field before saving
