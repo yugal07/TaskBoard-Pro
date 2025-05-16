@@ -1,5 +1,5 @@
 const { validationResult } = require('express-validator');
-const Automation = require('../models/automation');
+const Automation = require('../models/Automation');
 const Project = require('../models/project');
 const User = require('../models/user');
 

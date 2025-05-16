@@ -77,3 +77,37 @@ exports.createProjectInvitationNotification = async (project, invitedUserId) => 
     console.error('Error creating project invitation notification:', error);
   }
 };
+
+// Create a custom notification from automation
+exports.createCustomNotification = async (userId, message, type, projectId, taskId = null) => {
+  try {
+    const content = message;
+    
+    await notificationController.createNotification(
+      userId,
+      content,
+      type,
+      projectId,
+      taskId
+    );
+  } catch (error) {
+    console.error('Error creating custom notification:', error);
+  }
+};
+
+// Create a badge notification
+exports.createBadgeNotification = async (userId, badgeName, projectId) => {
+  try {
+    const message = `Congratulations! You've earned the "${badgeName}" badge`;
+    
+    await notificationController.createNotification(
+      userId,
+      message,
+      'badge',
+      projectId,
+      null
+    );
+  } catch (error) {
+    console.error('Error creating badge notification:', error);
+  }
+};

@@ -1,7 +1,7 @@
 const { validationResult } = require('express-validator');
 const Project = require('../models/project');
 const User = require('../models/user');
-const notificationService = require("../services/notificationServices");
+const notificationService = require("../services/notificationService");
 
 // Get all projects for current user
 exports.getUserProjects = async (req, res) => {

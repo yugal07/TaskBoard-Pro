@@ -4,7 +4,7 @@ const Project = require('../models/project');
 const User = require('../models/user');
 const automationService = require('../services/automationService');
 const socketService = require('../services/socketService'); 
-const notificationService = require("../services/notificationServices");
+const notificationService = require("../services/notificationService");
 
 // Get all tasks for a project
 exports.getProjectTasks = async (req, res) => {

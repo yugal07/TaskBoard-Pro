@@ -25,10 +25,12 @@ const server = http.createServer(app); // Create HTTP server
 
 // Initialize Socket.io
 const socketService = require('./services/socketService');
+const schedulerService = require('./services/schedulerService');
 socketService.init(server);
 
 // Connect to MongoDB
 connectDB();
+schedulerService.init();
 
 // Set up middleware
 app.use(express.json());

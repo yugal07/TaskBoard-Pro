@@ -25,7 +25,21 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  badges: [{
+    name: {
+      type: String,
+      required: true
+    },
+    awardedAt: {
+      type: Date,
+      default: Date.now
+    },
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project'
+    }
+  }]
 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -4,12 +4,14 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { TaskProvider } from './contexts/TaskContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { AutomationProvider } from './contexts/AutomationContext';
 import { useAuth } from './contexts/AuthContext';
 
 // Import page components
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import ProjectDetails from './pages/ProjectDetails';
+import ProjectAutomations from './pages/ProjectAutomations';
 import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
 
@@ -36,6 +38,7 @@ function App() {
           <ProjectProvider>
             <TaskProvider>
               <NotificationProvider>
+                <AutomationProvider>
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={
@@ -52,8 +55,16 @@ function App() {
                     </Layout>
                   </ProtectedRoute>
                 } />
+                                <Route path="/projects/:projectId/automations" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ProjectAutomations />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </AutomationProvider>
               </NotificationProvider>
             </TaskProvider>
           </ProjectProvider>
