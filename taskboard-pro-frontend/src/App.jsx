@@ -12,6 +12,9 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import ProjectDetails from './pages/ProjectDetails';
 import ProjectAutomations from './pages/ProjectAutomations';
+import ProjectAnalytics from './pages/ProjectAnalytics';
+import ProjectReports from './pages/ProjectReports';
+import ProjectSettings from './pages/ProjectSettings';
 import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
 
@@ -39,32 +42,54 @@ function App() {
             <TaskProvider>
               <NotificationProvider>
                 <AutomationProvider>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/projects/:projectId" element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <ProjectDetails />
-                    </Layout>
-                  </ProtectedRoute>
-                } />
-                                <Route path="/projects/:projectId/automations" element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <ProjectAutomations />
-                    </Layout>
-                  </ProtectedRoute>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              </AutomationProvider>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Dashboard />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/projects/:projectId" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <ProjectDetails />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/projects/:projectId/automations" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <ProjectAutomations />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
+                    {/* New Analytics Routes */}
+                    <Route path="/projects/:projectId/analytics" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <ProjectAnalytics />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/projects/:projectId/reports" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <ProjectReports />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/projects/:projectId/settings" element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <ProjectSettings />
+                        </Layout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AutomationProvider>
               </NotificationProvider>
             </TaskProvider>
           </ProjectProvider>
