@@ -13,10 +13,10 @@ dotenv.config();
 const connectDB = require('./config/db');
 
 // Import routes
-const authRoutes = require('./routes/authRoutes');
+const authRoutes = require("./routes/authRoutes")
 const projectRoutes = require('./routes/projectRoutes');
-const taskRoutes = require('./routes/taskRoutes');
-const automationRoutes = require('./routes/automationRoutes');
+const taskRoutes = require("./routes/taskRoutes");
+const automationRoutes = require("./routes/automationRoutes");
 const notificationRoutes = require("./routes/notificationRoutes")
 
 // Initialize Express app
