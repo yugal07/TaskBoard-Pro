@@ -1,9 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  Title, 
+  Tooltip, 
+  Legend,
+  Filler
+} from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { format, addDays, differenceInDays, parseISO, isAfter, isBefore, startOfDay } from 'date-fns';
 
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
 export default function BurndownChart({ tasks, projectStartDate, targetDate }) {
   const [chartData, setChartData] = useState(null);
+  const chartRef = useRef(null);
   
   useEffect(() => {
     if (!tasks || !projectStartDate || !targetDate) return;
@@ -73,7 +97,7 @@ export default function BurndownChart({ tasks, projectStartDate, targetDate }) {
       };
     };
     
-    const { labels, idealBurndown, actualBurndown, projectDuration } = generateBurndownData();
+    const { labels, idealBurndown, actualBurndown } = generateBurndownData();
     
     // Create chart data
     setChartData({
@@ -99,6 +123,15 @@ export default function BurndownChart({ tasks, projectStartDate, targetDate }) {
       ]
     });
   }, [tasks, projectStartDate, targetDate]);
+  
+  // Cleanup chart on unmount to prevent "Canvas already in use" error
+  useEffect(() => {
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
+  }, []);
   
   const chartOptions = {
     responsive: true,
@@ -157,7 +190,11 @@ export default function BurndownChart({ tasks, projectStartDate, targetDate }) {
       </div>
       
       <div className="h-80">
-        <Line data={chartData} options={chartOptions} />
+        <Line 
+          data={chartData} 
+          options={chartOptions} 
+          ref={chartRef}
+        />
       </div>
       
       <div className="mt-4 grid grid-cols-2 gap-4">

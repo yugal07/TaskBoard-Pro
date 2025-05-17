@@ -1,9 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { parseISO, format, subDays, differenceInDays } from 'date-fns';
 
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
 export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
   const [chartData, setChartData] = useState(null);
+  const chartRef = useRef(null);
   
   useEffect(() => {
     if (!tasks || !members || members.length === 0) return;
@@ -116,6 +136,15 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
       memberIds
     });
   }, [tasks, members, timeRange]);
+
+  // Cleanup chart instance on unmount
+  useEffect(() => {
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
+  }, []);
   
   const chartOptions = {
     responsive: true,
@@ -174,7 +203,11 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
       </div>
       
       <div className="h-80 mb-6">
-        <Bar data={chartData} options={chartOptions} />
+        <Bar 
+          data={chartData} 
+          options={chartOptions} 
+          ref={chartRef}
+        />
       </div>
       
       <div className="mt-6">
