@@ -1,11 +1,11 @@
-
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { useProjects } from '../contexts/ProjectContext';
 import { useTasks } from '../contexts/TaskContext';
 import api from '../services/api';
 import TaskBoard from '../components/TaskBoard';
 import TaskFilter from '../components/TaskFilter';
+import AddTaskButton from '../components/AddTaskButton';
 
 export default function ProjectDetails() {
   const { projectId } = useParams();
@@ -126,7 +126,7 @@ export default function ProjectDetails() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{currentProject.title}</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">{currentProject.description}</p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
             <div className="flex -space-x-2">
               {currentProject.members?.slice(0, 3).map((member) => (
                 <img
@@ -218,7 +218,11 @@ export default function ProjectDetails() {
        !location.pathname.includes('/reports') && 
        !location.pathname.includes('/settings') && (
         <>
-          <TaskFilter onFilterChange={applyFilters} />
+          <div className="flex justify-between items-center mb-6">
+            <TaskFilter onFilterChange={applyFilters} />
+            {/* Add the new Add Task Button here */}
+            <AddTaskButton />
+          </div>
           <TaskBoard />
           
           {/* Basic Analytics Summary on the Board Page */}
