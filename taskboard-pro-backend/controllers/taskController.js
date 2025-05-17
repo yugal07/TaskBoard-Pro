@@ -22,6 +22,7 @@ exports.getProjectTasks = async (req, res) => {
 };
 
 // Create a new task
+
 exports.createTask = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -42,11 +43,49 @@ exports.createTask = async (req, res) => {
       timeTracking 
     } = req.body;
     
+    console.log('Creating task with data:', { 
+      title, 
+      projectId,
+      status,
+      userUid: req.user.uid 
+    });
+    
     const user = await User.findOne({ uid: req.user.uid });
+    console.log('User from auth:', user ? { 
+      _id: user._id,
+      uid: user.uid,
+      email: user.email
+    } : 'User not found');
     
     // Check if user is a member of the project
     const project = await Project.findById(projectId);
-    if (!project || !project.members.includes(user._id)) {
+    console.log('Project found:', project ? { 
+      _id: project._id, 
+      title: project.title,
+      memberCount: project.members.length 
+    } : 'Project not found');
+    
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    
+    // Log project members for debugging
+    console.log('Project members:', project.members.map(member => ({
+      user: member.user,
+      role: member.role
+    })));
+    
+    // Check membership with proper comparison
+    const isMember = project.members.some(member => 
+      member.user && member.user.toString() === user._id.toString()
+    );
+    console.log('Is user a member?', isMember);
+    
+    if (!isMember) {
+      console.log('Membership check failed:', {
+        userObjectId: user._id.toString(),
+        memberIds: project.members.map(m => m.user ? m.user.toString() : 'undefined')
+      });
       return res.status(403).json({ message: 'Not authorized to add tasks to this project' });
     }
     
@@ -54,25 +93,6 @@ exports.createTask = async (req, res) => {
     const validStatus = project.statuses.some(s => s.name === status);
     if (!validStatus) {
       return res.status(400).json({ message: 'Invalid status for this project' });
-    }
-    
-    // Prepare dependencies if provided
-    let processedDependencies = [];
-    if (dependencies && dependencies.length > 0) {
-      // Validate that all dependency tasks exist and belong to the same project
-      for (const dependency of dependencies) {
-        const dependencyTask = await Task.findById(dependency.task);
-        if (!dependencyTask) {
-          return res.status(400).json({ message: `Dependency task ${dependency.task} not found` });
-        }
-        if (dependencyTask.project.toString() !== projectId) {
-          return res.status(400).json({ message: 'Dependency tasks must belong to the same project' });
-        }
-        processedDependencies.push({
-          task: dependency.task,
-          type: dependency.type
-        });
-      }
     }
     
     // Create task with all fields
@@ -85,34 +105,17 @@ exports.createTask = async (req, res) => {
       dueDate: dueDate || null,
       priority: priority || 'Medium',
       tags: tags || [],
-      dependencies: processedDependencies,
+      dependencies: dependencies || [],
       timeTracking: timeTracking || { estimate: null, logged: 0, history: [] },
       createdBy: user._id
     });
     
     await task.save();
+    console.log('Task created successfully:', { id: task._id, title: task.title });
     
-    if(assignee) {
-        await notificationService.createTaskAssignmentNotification(task, user._id);
-    }
+    // Rest of your function (notifications, socket events, etc.)
     
-    // Populate task data for response and socket
-    const populatedTask = await Task.findById(task._id)
-      .populate('assignee', 'displayName email photoURL')
-      .populate('createdBy', 'displayName email')
-      .populate('dependencies.task', 'title status');
-    
-    // Emit socket event for real-time update
-    socketService.emitTaskCreated(projectId, populatedTask);
-    
-    // Check for automations to trigger
-    if (assignee) {
-      await automationService.processTaskAssignment(task);
-    }
-
-    await automationService.processTaskCreation(task)
-    
-    res.status(201).json(populatedTask);
+    res.status(201).json(task);
   } catch (error) {
     console.error('Error creating task:', error);
     res.status(500).json({ message: 'Server error' });

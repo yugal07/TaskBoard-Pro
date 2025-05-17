@@ -26,47 +26,124 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
   const chartRef = useRef(null);
   
   useEffect(() => {
-    if (!tasks || !members || members.length === 0) return;
+    // Debug the input props
+    console.log('TeamPerformance - tasks:', tasks);
+    console.log('TeamPerformance - members:', members);
+    console.log('TeamPerformance - timeRange:', timeRange);
+    
+    if (!tasks || !members) {
+      console.log('TeamPerformance - tasks or members is falsy, returning early');
+      return;
+    }
+    
+    if (members.length === 0) {
+      console.log('TeamPerformance - members array is empty, returning early');
+      return;
+    }
     
     // Calculate member performance metrics
     const calculateMemberPerformance = () => {
       const endDate = new Date();
       const startDate = subDays(endDate, timeRange);
+      console.log('TeamPerformance - date range:', { startDate, endDate });
       
       // Initialize data structure for each member
       const memberData = {};
-      members.forEach(member => {
-        memberData[member._id] = {
-          name: member.displayName,
-          photoURL: member.photoURL,
+      console.log('TeamPerformance - initializing memberData for each member');
+      
+      members.forEach((member, index) => {
+        console.log(`TeamPerformance - processing member ${index}:`, member);
+        
+        // Debug member properties
+        console.log(`Member ${index} object:`, member);
+        
+        // First, determine the member ID using different possible properties
+        // This handles different API response formats
+        const memberId = 
+          member.id || 
+          member._id || 
+          (typeof member === 'string' ? member : null);
+        
+        if (!memberId) {
+          console.warn(`TeamPerformance - Member without ID found, skipping:`, member);
+          return;
+        }
+        
+        // Now extract the member name from different possible properties
+        // This handles different API response formats
+        const memberName = 
+          member.displayName || 
+          member.name || 
+          member.fullName || 
+          `Team Member ${index + 1}`;
+        
+        // Extract photo URL with fallback
+        const photoURL = 
+          member.photoURL || 
+          member.avatar || 
+          member.profilePic || 
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(memberName)}&background=random`;
+        
+        memberData[memberId] = {
+          name: memberName,
+          photoURL,
           tasksCompleted: 0,
           tasksAssigned: 0,
           timeLogged: 0,
           avgCompletionTime: 0 // in days
         };
+        
+        console.log(`TeamPerformance - Added member to memberData:`, memberData[memberId]);
       });
+      
+      console.log('TeamPerformance - memberData after initialization:', memberData);
       
       // Filter tasks within the time range
       const filteredTasks = tasks.filter(task => {
+        if (!task.createdAt) {
+          console.log('TeamPerformance - Task missing createdAt, skipping:', task);
+          return false;
+        }
+        
         const createdAt = parseISO(task.createdAt);
         return createdAt >= startDate && createdAt <= endDate;
       });
       
+      console.log(`TeamPerformance - filtered ${filteredTasks.length} tasks in time range`);
+      
       // Calculate metrics for each task
-      filteredTasks.forEach(task => {
-        // Skip if task has no assignee
-        if (!task.assignee) return;
+      filteredTasks.forEach((task, index) => {
+        console.log(`TeamPerformance - processing task ${index}:`, task);
         
-        const memberId = task.assignee._id;
+        // Skip if task has no assignee
+        if (!task.assignee) {
+          console.log(`TeamPerformance - task ${index} has no assignee, skipping`);
+          return;
+        }
+        
+        console.log(`TeamPerformance - task ${index} assignee:`, task.assignee);
+        
+        // Get the member ID using all possible property paths
+        const memberId = 
+          (task.assignee.id || task.assignee._id) || // If assignee is an object with id
+          (typeof task.assignee === 'string' ? task.assignee : null); // If assignee is just the ID string
+        
+        console.log(`TeamPerformance - task ${index} determined memberId:`, memberId);
+        
         // Skip if assignee is not in the project members list
-        if (!memberData[memberId]) return;
+        if (!memberData[memberId]) {
+          console.log(`TeamPerformance - task ${index} assignee not in members, skipping`);
+          return;
+        }
         
         // Count assigned tasks
         memberData[memberId].tasksAssigned++;
+        console.log(`TeamPerformance - incremented tasksAssigned for ${memberId}`);
         
         // Count completed tasks
         if (task.status === 'Done') {
           memberData[memberId].tasksCompleted++;
+          console.log(`TeamPerformance - incremented tasksCompleted for ${memberId}`);
           
           // Calculate completion time if task has an updatedAt date
           if (task.updatedAt && task.createdAt) {
@@ -83,19 +160,50 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
               : (currentAvg * currentCount + completionTime) / (currentCount + 1);
             
             memberData[memberId].avgCompletionTime = newAvg;
+            console.log(`TeamPerformance - updated avgCompletionTime for ${memberId}:`, newAvg);
           }
         }
         
         // Add time logged
         if (task.timeTracking && task.timeTracking.logged) {
           memberData[memberId].timeLogged += task.timeTracking.logged;
+          console.log(`TeamPerformance - added ${task.timeTracking.logged} to timeLogged for ${memberId}`);
         }
       });
       
+      console.log('TeamPerformance - final memberData:', memberData);
       return memberData;
     };
     
     const memberPerformance = calculateMemberPerformance();
+    console.log('TeamPerformance - memberPerformance:', memberPerformance);
+    
+    // Check if we have any data to display
+    if (Object.keys(memberPerformance).length === 0) {
+      console.log('TeamPerformance - no member performance data to display');
+      setChartData({
+        labels: [],
+        datasets: [
+          {
+            label: 'Tasks Completed',
+            data: [],
+            backgroundColor: 'rgba(75, 192, 192, 0.8)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Tasks Assigned',
+            data: [],
+            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }
+        ],
+        memberData: {},
+        memberIds: []
+      });
+      return;
+    }
     
     // Prepare data for chart
     const completedData = [];
@@ -104,6 +212,7 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
     const memberIds = [];
     
     // Sort members by tasks completed
+    console.log('TeamPerformance - preparing chart data');
     Object.keys(memberPerformance)
       .sort((a, b) => memberPerformance[b].tasksCompleted - memberPerformance[a].tasksCompleted)
       .forEach(memberId => {
@@ -114,7 +223,7 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
         memberIds.push(memberId);
       });
     
-    setChartData({
+    const chartDataObject = {
       labels,
       datasets: [
         {
@@ -134,7 +243,10 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
       ],
       memberData: memberPerformance,
       memberIds
-    });
+    };
+    
+    console.log('TeamPerformance - setting chartData:', chartDataObject);
+    setChartData(chartDataObject);
   }, [tasks, members, timeRange]);
 
   // Cleanup chart instance on unmount
@@ -179,12 +291,15 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
   };
   
   if (!chartData) {
+    console.log('TeamPerformance - chartData is null, showing loading state');
     return (
       <div className="flex items-center justify-center h-60 bg-gray-100 dark:bg-dark-700 rounded-lg">
         <p className="text-gray-500 dark:text-gray-400">Loading team performance data...</p>
       </div>
     );
   }
+  
+  console.log('TeamPerformance - rendering with chartData:', chartData);
   
   // Format minutes to hours and minutes
   const formatTimeLogged = (minutes) => {
@@ -234,54 +349,64 @@ export default function TeamPerformance({ tasks, members, timeRange = 30 }) {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
-              {chartData.memberIds.map(memberId => {
-                const memberStats = chartData.memberData[memberId];
-                return (
-                  <tr key={memberId}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <img 
-                          className="h-8 w-8 rounded-full mr-3" 
-                          src={memberStats.photoURL || `https://ui-avatars.com/api/?name=${memberStats.name}&background=random`} 
-                          alt={memberStats.name} 
-                        />
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {memberStats.name}
+              {chartData.memberIds.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                    No team member data available
+                  </td>
+                </tr>
+              ) : (
+                chartData.memberIds.map(memberId => {
+                  const memberStats = chartData.memberData[memberId];
+                  console.log(`TeamPerformance - rendering row for member:`, memberStats);
+                  
+                  return (
+                    <tr key={memberId}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <img 
+                            className="h-8 w-8 rounded-full mr-3" 
+                            src={memberStats.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberStats.name || 'Unknown')}&background=random`} 
+                            alt={memberStats.name || 'Unknown'} 
+                          />
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {memberStats.name || 'Unknown'}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {memberStats.tasksCompleted} / {memberStats.tasksAssigned}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {memberStats.tasksAssigned > 0 
-                          ? `${Math.round((memberStats.tasksCompleted / memberStats.tasksAssigned) * 100)}%`
-                          : '0%'
-                        }
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {memberStats.avgCompletionTime > 0 
-                          ? `${Math.round(memberStats.avgCompletionTime)} days`
-                          : 'N/A'
-                        }
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {memberStats.timeLogged > 0 
-                          ? formatTimeLogged(memberStats.timeLogged)
-                          : 'None'
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {memberStats.tasksCompleted} / {memberStats.tasksAssigned}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {memberStats.tasksAssigned > 0 
+                            ? `${Math.round((memberStats.tasksCompleted / memberStats.tasksAssigned) * 100)}%`
+                            : '0%'
+                          }
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {memberStats.avgCompletionTime > 0 
+                            ? `${Math.round(memberStats.avgCompletionTime)} days`
+                            : 'N/A'
+                          }
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {memberStats.timeLogged > 0 
+                            ? formatTimeLogged(memberStats.timeLogged)
+                            : 'None'
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

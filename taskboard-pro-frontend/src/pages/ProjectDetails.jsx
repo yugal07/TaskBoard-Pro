@@ -19,7 +19,7 @@ export default function ProjectDetails() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
-  const [projectFetched, setProjectFetched] = useState(false); // Add this to track if we've fetched the project
+  const [projectFetched, setProjectFetched] = useState(false); 
   
   // Fetch project details when component mounts or projectId changes
   useEffect(() => {
@@ -155,60 +155,70 @@ export default function ProjectDetails() {
       </div>
       
       <div className="bg-gray-100 dark:bg-dark-800 p-4 rounded-lg mb-6">
-        <div className="flex space-x-4 overflow-x-auto">
-          <Link
-            to={`/projects/${projectId}`}
-            className={`px-4 py-2 whitespace-nowrap ${
-              !location.pathname.includes('/automations') && 
-              !location.pathname.includes('/analytics') && 
-              !location.pathname.includes('/reports') && 
-              !location.pathname.includes('/settings')
-                ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
-            }`}
-          >
-            Board
-          </Link>
-          <Link
-            to={`/projects/${projectId}/analytics`}
-            className={`px-4 py-2 whitespace-nowrap ${
-              location.pathname.includes('/analytics')
-                ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
-            }`}
-          >
-            Analytics
-          </Link>
-          <Link
-            to={`/projects/${projectId}/reports`}
-            className={`px-4 py-2 whitespace-nowrap ${
-              location.pathname.includes('/reports')
-                ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
-            }`}
-          >
-            Reports
-          </Link>
-          <Link
-            to={`/projects/${projectId}/automations`}
-            className={`px-4 py-2 whitespace-nowrap ${
-              location.pathname.includes('/automations')
-                ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
-            }`}
-          >
-            Automations
-          </Link>
-          <Link
-            to={`/projects/${projectId}/settings`}
-            className={`px-4 py-2 whitespace-nowrap ${
-              location.pathname.includes('/settings')
-                ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
-            }`}
-          >
-            Settings
-          </Link>
+        <div className="flex justify-between items-center">
+          <div className="flex space-x-4 overflow-x-auto">
+            <Link
+              to={`/projects/${projectId}`}
+              className={`px-4 py-2 whitespace-nowrap ${
+                !location.pathname.includes('/automations') && 
+                !location.pathname.includes('/analytics') && 
+                !location.pathname.includes('/reports') && 
+                !location.pathname.includes('/settings')
+                  ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
+              }`}
+            >
+              Board
+            </Link>
+            <Link
+              to={`/projects/${projectId}/analytics`}
+              className={`px-4 py-2 whitespace-nowrap ${
+                location.pathname.includes('/analytics')
+                  ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
+              }`}
+            >
+              Analytics
+            </Link>
+            <Link
+              to={`/projects/${projectId}/reports`}
+              className={`px-4 py-2 whitespace-nowrap ${
+                location.pathname.includes('/reports')
+                  ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
+              }`}
+            >
+              Reports
+            </Link>
+            <Link
+              to={`/projects/${projectId}/automations`}
+              className={`px-4 py-2 whitespace-nowrap ${
+                location.pathname.includes('/automations')
+                  ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
+              }`}
+            >
+              Automations
+            </Link>
+            <Link
+              to={`/projects/${projectId}/settings`}
+              className={`px-4 py-2 whitespace-nowrap ${
+                location.pathname.includes('/settings')
+                  ? 'bg-white dark:bg-dark-700 rounded-md text-gray-800 dark:text-gray-200 font-medium shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-white hover:dark:bg-dark-700 rounded-md'
+              }`}
+            >
+              Settings
+            </Link>
+          </div>
+          
+          {/* Only show Add Task button on the main board tab */}
+          {!location.pathname.includes('/automations') && 
+           !location.pathname.includes('/analytics') && 
+           !location.pathname.includes('/reports') && 
+           !location.pathname.includes('/settings') && (
+            <AddTaskButton />
+          )}
         </div>
       </div>
       
@@ -218,10 +228,8 @@ export default function ProjectDetails() {
        !location.pathname.includes('/reports') && 
        !location.pathname.includes('/settings') && (
         <>
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6">
             <TaskFilter onFilterChange={applyFilters} />
-            {/* Add the new Add Task Button here */}
-            <AddTaskButton />
           </div>
           <TaskBoard />
           

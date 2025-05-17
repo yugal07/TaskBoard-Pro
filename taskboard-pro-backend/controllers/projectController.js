@@ -57,7 +57,10 @@ exports.getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(req.params.projectId)
       .populate('owner', 'displayName email photoURL')
-      .populate('members', 'displayName email photoURL');
+      .populate({
+        path: 'members.user',
+        select: 'displayName email photoURL'
+      });
       
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTasks } from '../contexts/TaskContext';
 import { useProjects } from '../contexts/ProjectContext';
+import CreateTaskModal from './CreateTaskModal';
 
 export default function AddTaskButton() {
   const { projectId } = useParams();
@@ -33,7 +34,7 @@ export default function AddTaskButton() {
         Add Task
       </button>
 
-      {/* This will be rendered by the parent component */}
+      {/* Directly import and use CreateTaskModal component */}
       {isCreateModalOpen && (
         <CreateTaskModal 
           isOpen={isCreateModalOpen} 
@@ -44,9 +45,3 @@ export default function AddTaskButton() {
     </>
   );
 }
-
-// Import at runtime to avoid circular dependencies
-const CreateTaskModal = ({ isOpen, onClose, initialStatus }) => {
-  const TaskModal = require('./CreateTaskModal').default;
-  return <TaskModal isOpen={isOpen} onClose={onClose} initialStatus={initialStatus} />;
-};

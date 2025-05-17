@@ -183,18 +183,25 @@ export default function CreateTaskModal({ isOpen, onClose, initialStatus }) {
                 Assignee
               </label>
               <select
-                id="assignee"
-                value={assignee}
-                onChange={(e) => setAssignee(e.target.value)}
-                className="input-field"
-              >
-                <option value="">Unassigned</option>
-                {currentProject?.members?.map((member) => (
-                  <option key={member._id} value={member._id}>
-                    {member.displayName}
-                  </option>
-                ))}
-              </select>
+  id="assignee"
+  value={assignee}
+  onChange={(e) => setAssignee(e.target.value)}
+  className="input-field"
+>
+  <option value="">Unassigned</option>
+  {currentProject?.members?.map((member) => {
+    // Extract user data - could be directly in member or in member.user
+    const user = member.user || member;
+    const userId = user._id || user.id || member._id;
+    const displayName = user.displayName || 'Unknown User';
+    
+    return (
+      <option key={userId} value={userId}>
+        {displayName}
+      </option>
+    );
+  })}
+</select>
             </div>
           </div>
           
