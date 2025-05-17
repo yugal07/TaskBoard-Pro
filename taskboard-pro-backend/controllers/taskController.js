@@ -335,7 +335,7 @@ exports.addTimeTrackingEntry = async (req, res) => {
   }
   
   try {
-    const { startTime, endTime, duration, description } = req.body;
+    const { duration } = req.body;
     
     const task = await Task.findById(req.params.taskId);
     
@@ -351,38 +351,22 @@ exports.addTimeTrackingEntry = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this task' });
     }
     
-    // Create new time entry
-    const timeEntry = {
-      startTime: startTime ? new Date(startTime) : null,
-      endTime: endTime ? new Date(endTime) : null,
-      duration: duration || 0,
-      description: description || '',
-      user: user._id
-    };
-    
-    // Add the entry to the time tracking history
-    task.timeTracking = task.timeTracking || { estimate: null, logged: 0, history: [] };
-    task.timeTracking.history.push(timeEntry);
-    
-    // Recalculate total logged time
-    task.timeTracking.logged = task.timeTracking.history.reduce(
-      (total, entry) => total + (entry.duration || 0), 0
-    );
+    // Add duration to total logged time
+    task.timeLogged = (task.timeLogged || 0) + parseInt(duration);
     
     await task.save();
     
     // Populate task data for response
     const populatedTask = await Task.findById(task._id)
       .populate('assignee', 'displayName email photoURL')
-      .populate('createdBy', 'displayName email')
-      .populate('timeTracking.history.user', 'displayName');
+      .populate('createdBy', 'displayName email');
     
     // Emit socket event for real-time update
     socketService.emitTaskUpdate(task.project, populatedTask);
     
     res.status(200).json(populatedTask);
   } catch (error) {
-    console.error('Error adding time tracking entry:', error);
+    console.error('Error adding time entry:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

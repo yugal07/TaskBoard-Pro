@@ -234,43 +234,24 @@ export function TaskProvider({ children }) {
     }
   };
   
-  // Add file attachment to task
-  const uploadAttachment = async (taskId, file) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await api.post(`/files/upload/${taskId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      return response.data;
-    } catch (error) {
-      console.error('Error uploading attachment:', error);
-      throw error;
-    }
-  };
-  
-  // Delete file attachment from task
-  const deleteAttachment = async (taskId, attachmentId) => {
-    try {
-      await api.delete(`/files/${taskId}/${attachmentId}`);
-      return true;
-    } catch (error) {
-      console.error('Error deleting attachment:', error);
-      throw error;
-    }
-  };
-  
-  // Add time tracking entry to task
+  // Add time tracking entry to task (simplified)
   const addTimeEntry = async (taskId, timeData) => {
     try {
       const response = await api.post(`/tasks/${taskId}/time`, timeData);
       return response.data;
     } catch (error) {
       console.error('Error adding time entry:', error);
+      throw error;
+    }
+  };
+  
+  // Update task dependencies (simplified)
+  const updateDependencies = async (taskId, dependencies) => {
+    try {
+      const response = await api.put(`/tasks/${taskId}/dependencies`, { dependencies });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating dependencies:', error);
       throw error;
     }
   };
@@ -285,9 +266,8 @@ export function TaskProvider({ children }) {
     moveTask,
     applyFilters,
     filters,
-    uploadAttachment,
-    deleteAttachment,
-    addTimeEntry
+    addTimeEntry,
+    updateDependencies
   };
   
   return (

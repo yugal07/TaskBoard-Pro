@@ -53,7 +53,7 @@ router.put(
   taskController.updateTask
 );
 
-
+// Simplified dependencies endpoint
 router.put(
   '/:taskId/dependencies',
   verifyToken,
@@ -69,9 +69,7 @@ router.delete(
   taskController.deleteTask
 );
 
-// @route   POST /api/tasks/:taskId/time
-// @desc    Add a time tracking entry to a task
-// @access  Private (project members only)
+// Simplified time tracking endpoint
 router.post(
   '/:taskId/time',
   [
